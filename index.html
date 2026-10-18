@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b5cab">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>吉隆坡公交实时</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>🚌 吉隆坡公交实时</h1>
+  <div id="status">载入中…</div>
+</header>
+
+<nav id="chips"></nav>
+
+<div id="map"></div>
+
+<div id="toolbar">
+  <button id="btnLocate">📍 定位</button>
+  <button id="btnStop">⭐ 我的站</button>
+  <button id="btnRoutes">➕ 线路</button>
+  <button id="btnRefresh">🔄</button>
+</div>
+
+<main id="panel"></main>
+
+<div id="modal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="modalTitle"></h2><button id="modalClose">✕</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
