@@ -157,6 +157,12 @@ function etaTo(v, dir, stopId) {
   const mins = Math.max(0, (target.d - along) / speed / 60 + n * 0.3);  // 每站约停 20 秒
   return { stops: n, mins: Math.round(mins) };
 }
+// 行驶方向（0=北，顺时针）：有 GPS 方位角就用它；停着且方位为 0 时多半无效
+function headingOf(v) {
+  if (v.bearing == null || (v.bearing === 0 && !(v.speed > 0))) return null;
+  return v.bearing;
+}
+const compass = b => ["北", "东北", "东", "东南", "南", "西南", "西", "西北"][Math.round(((b % 360) + 360) % 360 / 45) % 8];
 const shapeLenCache = new WeakMap();
 function shapeLen(shape) {
   if (shapeLenCache.has(shape)) return shapeLenCache.get(shape);
@@ -171,9 +177,13 @@ function renderChips() {
   el.innerHTML = state.follow.map(k => {
     const r = routeByKey(k);
     const n = vehiclesFor(r, state.routeData[k]).length;
-    return `<button class="chip ${k === state.current ? "on" : ""}" data-k="${esc(k)}">${esc(r.short)}<span class="cnt">${state.live ? n + " 辆" : ""}</span></button>`;
+    return `<button class="chip ${k === state.current ? "on" : ""}" data-k="${esc(k)}">${esc(r.short)}<span class="cnt">${state.live ? n + " 辆" : ""}</span><span class="del" data-del="${esc(k)}">✕</span></button>`;
   }).join("");
-  el.querySelectorAll(".chip").forEach(b => b.onclick = () => selectRoute(b.dataset.k));
+  el.querySelectorAll(".chip").forEach(b => b.onclick = e => {
+    const del = e.target.dataset.del;
+    if (del) { if (confirm(`不再关注 ${routeByKey(del).short}？`)) toggleFollow(del); return; }
+    selectRoute(b.dataset.k);
+  });
 }
 
 let fitted = null;
@@ -198,7 +208,9 @@ function renderMap(route, data) {
   vehiclesFor(route, data).forEach(v => {
     const stale = vehicleAge(v) > CFG.STALE_SECONDS;
     const name = v.plate || v.label || v.id || "?";
-    const icon = L.divIcon({ className: "", html: `<div class="bus-icon ${stale ? "stale" : ""}">🚌 ${esc(name)}</div>`, iconSize: null, iconAnchor: [40, 12] });
+    const b = headingOf(v);
+    const arrow = b == null ? "" : `<span class="arrow" style="transform:rotate(${b - 90}deg)">➤</span>`;
+    const icon = L.divIcon({ className: "", html: `<div class="bus-icon ${stale ? "stale" : ""}">${arrow}🚌 ${esc(name)}</div>`, iconSize: null, iconAnchor: [40, 12] });
     L.marker([v.lat, v.lon], { icon, zIndexOffset: 1000 })
       .bindPopup(`<b>${esc(name)}</b><br>数据更新于 ${agoText(vehicleAge(v))}${stale ? "<br>⚠️ 超过 3 分钟未更新" : ""}`)
       .addTo(layers.buses);
@@ -237,7 +249,8 @@ function renderPanel(route, data) {
       }
       h += `<div class="card ${stale ? "stale" : ""}" data-lat="${v.lat}" data-lon="${v.lon}">
         <div class="plate">🚌 ${esc(v.plate || v.label || v.id || "未知车牌")}</div>
-        <div class="muted">往 ${esc(d.head)} · 数据更新于 ${agoText(age)}${stale ? " ⚠️ 超过 3 分钟未更新" : ""}</div>${eta}</div>`;
+        <div class="dir">➜ 开往 ${esc(d.head)}${headingOf(v) != null ? `（向${compass(headingOf(v))}行驶）` : ""}</div>
+        <div class="muted">数据更新于 ${agoText(age)}${stale ? " ⚠️ 超过 3 分钟未更新" : ""}</div>${eta}</div>`;
     });
   }
   h += `<p class="muted">线路资料更新：${esc((state.staticUpdated || "").slice(0, 10))}。到站时间仅为按距离的粗略估算。</p>`;

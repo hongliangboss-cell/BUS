@@ -38,3 +38,7 @@ input[type=search] { width:100%; font-size:19px; padding:12px; border-radius:12p
 .row button { flex:none; min-width:84px; }
 .bus-icon { background:var(--blue); color:#fff; border:2px solid #fff; border-radius:10px; font-size:13px; font-weight:700; text-align:center; line-height:24px; box-shadow:0 1px 4px rgba(0,0,0,.4); white-space:nowrap; padding:0 4px; }
 .bus-icon.stale { background:var(--gray); }
+.chip .del { margin-left:10px; font-size:15px; opacity:.6; padding:2px 4px; }
+.dir { font-size:18px; font-weight:600; color:var(--blue); margin-top:2px; }
+.arrow { display:inline-block; color:#ffeb3b; margin-right:3px; }
+.bus-icon.stale .arrow { color:#fff; }
