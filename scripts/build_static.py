@@ -167,8 +167,13 @@ def build_category(cat, data):
         if not directions:
             continue
         short = r.get("route_short_name") or rid
+        long_ = r.get("route_long_name", "")
+        # MRT 接驳巴士的资料把线路号（如 T451）放在 long_name，short_name 是内部编号
+        if short.isdigit() and len(short) >= 6 and long_ and len(long_) <= 8:
+            short = long_
+            long_ = " ⇄ ".join(dict.fromkeys(d["head"] for d in directions))
         info = {"key": key, "id": rid, "cat": cat, "short": short,
-                "long": r.get("route_long_name", ""), "color": r.get("route_color", "")}
+                "long": long_, "color": r.get("route_color", "")}
         route_list.append(info)
         with open(os.path.join(OUT, "route", safe(key) + ".json"), "w", encoding="utf-8") as f:
             json.dump({**info, "directions": directions}, f, ensure_ascii=False, separators=(",", ":"))

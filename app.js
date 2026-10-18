@@ -78,6 +78,15 @@ async function loadRoutes() {
       .filter(Boolean).map(r => r.key);
     store.set("follow", follow);
   }
+  // 默认线路以后才出现在资料里（例如 T451）时，自动补关注一次
+  const applied = store.get("defaultsApplied", []);
+  CFG.DEFAULT_ROUTES.filter(s => !applied.includes(s)).forEach(s => {
+    const r = state.routes.find(r => r.short.toUpperCase() === s.toUpperCase());
+    if (!r) return;
+    if (!follow.includes(r.key)) follow.push(r.key);
+    applied.push(s);
+  });
+  store.set("defaultsApplied", applied); store.set("follow", follow);
   state.follow = follow.filter(routeByKey);
   state.current = store.get("current", null);
   if (!state.follow.includes(state.current)) state.current = state.follow[0] || null;
@@ -118,7 +127,8 @@ function vehiclesFor(route, data) {
   const allTrips = data ? data.directions.map(d => d.tripSet) : [];
   return state.live.vehicles.filter(v => {
     if (v.cat !== route.cat) return false;
-    if (v.route && (v.route === route.id || v.route.toUpperCase() === route.short.toUpperCase())) return true;
+    // 实时数据的 route 可能是 "U7720"（同静态 id）或 "T155 Inbound"（线路号 + 方向）
+    if (v.route && (v.route === route.id || v.route.split(" ")[0].toUpperCase() === route.short.toUpperCase())) return true;
     return v.trip && allTrips.some(s => s.has(v.trip));
   });
 }
@@ -141,7 +151,9 @@ function etaTo(v, dir, stopId) {
   const along = p.along * (isFinite(scale) && scale > 0 ? scale : 1);
   if (along > target.d + 50) return { passed: true };
   const n = dir.stops.filter(s => s.d > along + 30 && s.d <= target.d).length;
-  const speed = v.speed > 1.5 ? Math.min(Math.max(v.speed, 4), 11) : 5; // 米/秒，默认约 18 公里/小时
+  // 实测接口的 speed 是公里/小时（规范写米/秒，但数值如 74 只能是公里/小时），换算成米/秒
+  const mps = (v.speed || 0) / 3.6;
+  const speed = mps > 1.5 ? Math.min(Math.max(mps, 4), 11) : 5;      // 默认约 18 公里/小时
   const mins = Math.max(0, (target.d - along) / speed / 60 + n * 0.3);  // 每站约停 20 秒
   return { stops: n, mins: Math.round(mins) };
 }
