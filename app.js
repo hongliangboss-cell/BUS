@@ -126,9 +126,12 @@ function vehiclesFor(route, data) {
   if (!state.live) return [];
   const allTrips = data ? data.directions.map(d => d.tripSet) : [];
   return state.live.vehicles.filter(v => {
+    // 线路号（如 T450）在两个信号源里是唯一的：静态资料把 T450 放在 rapid-bus-kl，
+    // 实时车辆却可能从 rapid-bus-mrtfeeder 上传，所以按线路号匹配时不限分类。
+    // 实时 route 可能是 "U7720"（同静态 id）、"T450" 或 "T155 Inbound"（线路号 + 方向）
+    if (v.route && v.route.split(" ")[0].toUpperCase() === route.short.toUpperCase()) return true;
     if (v.cat !== route.cat) return false;
-    // 实时数据的 route 可能是 "U7720"（同静态 id）或 "T155 Inbound"（线路号 + 方向）
-    if (v.route && (v.route === route.id || v.route.split(" ")[0].toUpperCase() === route.short.toUpperCase())) return true;
+    if (v.route && v.route === route.id) return true;
     return v.trip && allTrips.some(s => s.has(v.trip));
   });
 }
